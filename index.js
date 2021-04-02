@@ -9,22 +9,16 @@ const app = express()
 const port = process.env.PORT || 4500
 
 const bodyParser = require('body-parser');
-const fs = require('fs')
-const request = require('request')
-const https = require('https')
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-require('dotenv/config')
-const puppeteer = require('puppeteer')
 
-//connect to mongo db
+
+
 const assert = require('assert')
-const { resolve } = require('path')
-const e = require('express')
-const mongo = require('mongodb');
+
 
 const MongoClient = require('mongodb').MongoClient;
 const url = process.env.DB_connection
 var mongodb
+
 // Create the db connection
 MongoClient.connect(url,{  
     poolSize: 10, useUnifiedTopology: true }, function(err, db) {  
@@ -49,8 +43,7 @@ let transporter = nodemailer.createTransport({
     }
 })
 
-//
-
+// returns all user info in the database
 app.get('/users', async(req, res) =>{
     const DB = await mongodb.db("DataHawkDB").collection('users')
     const users = await DB.find({}).toArray()
@@ -59,6 +52,7 @@ app.get('/users', async(req, res) =>{
 
 
 
+//returns the permissions of a specific user
 app.post('/check-permissions',async(req,res)=>{
     try{
         const sub = req.body.sub
@@ -76,6 +70,7 @@ app.post('/check-permissions',async(req,res)=>{
     
 })
 
+//adds a new default user to database
 app.post('/new-user', async(req,res)=>{
     try{
         console.log("adding user")
@@ -95,6 +90,7 @@ app.post('/new-user', async(req,res)=>{
     }
 })
 
+//checks permissions then adds grants company admin privilege to the specified user
 app.post('/add-company-admin',async(req,res)=>{
     try{
         const sub = req.body.sub
@@ -127,7 +123,7 @@ app.post('/add-company-admin',async(req,res)=>{
     }
     
 })
-
+// grants a user access to a companies data
 app.post('/add-company-user',async(req,res)=>{
     try{
         const sub = req.body.sub
@@ -162,23 +158,34 @@ app.post('/add-company-user',async(req,res)=>{
     }
     
 })
-
+// accesses the data that the specified user has access to 
 app.post('/get-data',async(req,res)=>{
     try{
         const sub = req.body.sub
+       
         const users = await mongodb.db("DataHawkDB").collection('users')
         const user = await users.findOne({sub:sub})
         
         const userWithData = await users.findOne({companyId:user.dataAccess})
-        
+        console.log(userWithData)
+        const accessibleDataGroups = userWithData.dataGroups || []
+        console.log(accessibleDataGroups)
         const data = userWithData.data
         let dataList = []
-        for(const d in data){
-            console.log(d)
-            let dl = data[d]
-            let name = d
-            dataList.push({name:name, data:dl})
+
+        for(const group of accessibleDataGroups){
+            let groupData = data[group]
+            console.log(groupData)
+            for(const d in groupData){
+                console.log(d)
+                let dl = groupData[d]
+                let name = d
+                dataList.push({name:name, data:dl})
+            }
         }
+        
+        
+       
         console.log("sending data")
         console.log(dataList)
         if(dataList[0] === undefined){
