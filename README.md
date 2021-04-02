@@ -1,6 +1,6 @@
 # Datahawk-API
 
-### starting instructions: 
+### Start instructions: 
 "npm start" to run in production mode
 "npm run dev" to run development version of server
 server will open automatically on port 4000
